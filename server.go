@@ -45,7 +45,8 @@ func main(){
 
 		case conn := <-newUser: // If new connection
 			log.Printf("Accepted new user, #%d", userCount)
-			//announcements <- fmt.Sprintf("Accepted new user, #%d", userCount)
+			fmt.Print('\a')
+			// announcements <- fmt.Sprintf("Accepted new user, #%d", userCount)
 
 			users[conn] = userCount // Add connection
 			userCount++ // Increment the usercount
@@ -57,7 +58,7 @@ func main(){
 					if err != nil{
 						break
 					}
-					messages <- fmt.Sprintf("User #%d : %s\n", userId, newMessage) // Send to messages channel
+					messages <- fmt.Sprintf("User #%d : %s\a\n", userId, newMessage) // Send to messages channel and ring every user
 
 				}
 
