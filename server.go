@@ -1,24 +1,24 @@
 package main
 
 import (
-"fmt"
-"log"
-"os"
-"net"
-"bufio"
-"strings"
+	"bufio"
+	"fmt"
+	"log"
+	"net"
+	"os"
+	"strings"
 )
 
-func main(){
+func main() {
 
 	userCount := 1
-	maxUsers := 2 // By default
+	const maxUsers := 2 // By default
 
-	users := make(map[net.Conn] string) // Map of active connections
-	newUser := make(chan net.Conn) // Handle new connection
-	addedUser := make(chan net.Conn) // Add new connection
-	deadUser := make(chan net.Conn) // Users that have left
-	messages := make(chan string) // channel that recieves messages from all users
+	users := make(map[net.Conn]string) // Map of active connections
+	newConnection := make(chan net.Conn)     // Handle new connection
+	addedUser := make(chan net.Conn)   // Add new connection
+	deadUser := make(chan net.Conn)    // Users that have left
+	messages := make(chan string)      // channel that recieves messages from all users
 
 	server, err := net.Listen("tcp", ":6000")
 	if err != nil {
@@ -26,27 +26,23 @@ func main(){
 		os.Exit(1)
 	}
 
-	go func(){ // Launch routine that will accept connections forever
-		for{
+	go func() { // Launch routine that will accept connections forever
+		for userCount < maxUsers {
 			conn, err := server.Accept()
 			if err != nil {
 				fmt.Println(err)
 				os.Exit(1)
 			}
-			if userCount > maxUsers {
-				conn.Write([]byte("Server is full!\n\n"))
-				// os.Exit(1)
-			}else {
-			newUser <- conn
-			}// Send to handle new user
+				newConnection <- conn // Send to handle new user
 		}
 	}()
 
-	for{
+	for {
 
-		select{
-		case conn := <-newUser:
-			go func(conn net.Conn){ // Ask user for name and information
+		select {
+		case conn := <-newConnection:
+
+			go func(conn net.Conn) { // Ask user for name and information
 				reader := bufio.NewReader(conn)
 				conn.Write([]byte("Enter name: "))
 				userName, _ := reader.ReadString('\n')
@@ -55,7 +51,7 @@ func main(){
 				messages <- fmt.Sprintf("Accepted user : [%s]\n\n", userName)
 
 				users[conn] = userName // Add connection
-				userCount++ // Increment the usercount
+				userCount++       
 
 				addedUser <- conn // Add user to pool
 			}(conn)
@@ -67,33 +63,31 @@ func main(){
 				for {
 					newMessage, err := reader.ReadString('\n')
 					newMessage = strings.Trim(newMessage, "\r\n")
-					if err != nil{
+					if err != nil {
 						break
 					}
 					// Send to messages channel therefore ring every user
-					messages <- fmt.Sprintf(">%s: %s \a\n", userName, newMessage)
+					messages <- fmt.Sprintf(">%s: %s \a\n\n", userName, newMessage)
 				}
 
 				deadUser <- conn // If error occurs, connection has been terminated
 				messages <- fmt.Sprintf("%s disconnected\n", userName)
 			}(conn, users[conn])
 
-		case message := <- messages: // If message recieved from any user
+		case message := <-messages: // If message recieved from any user
 
 			for conn, sentBy := range users { // Send to all users
-				go func(conn net.Conn, message string){ // Write to all user connections
-					if sentBy != message[1:strings.IndexByte(message, ':')]{
+				go func(conn net.Conn, message string) { // Write to all user connections
 						_, err := conn.Write([]byte(message))
-						if err != nil{
+						if err != nil {
 							deadUser <- conn
 						}
-					}
 				}(conn, message)
-			log.Printf("New message: %s", message)
-			log.Printf("Sent to %d users", len(users))
+				log.Printf("New message: %s", message)
+				log.Printf("Sent to %d users", len(users))
 			}
 
-		case conn := <- deadUser: // Handle dead users
+		case conn := <-deadUser: // Handle dead users
 			log.Printf("Client disconnected")
 			delete(users, conn)
 			userCount--
