@@ -1,3 +1,18 @@
+/*
+Simple TCP chat implementation in Go.
+
+To start, use : go run ./server.go
+By default it runs at port 6000
+
+Connect to it via telnet -
+(from own machine) : telnet localhost 6000
+
+(from machine on same network) : telnet [local IP] 6000
+
+(*from external machine) : telnet [Your public IP] 6000
+(You need to have port forwarding on using your router)
+
+*/
 package main
 
 import (
@@ -12,12 +27,12 @@ import (
 func main() {
 
 	userCount := 1
-	const maxUsers := 2 // By default
+	const maxUsers := 4 // By default
 
 	users := make(map[net.Conn]string) // Map of active connections
-	newConnection := make(chan net.Conn)     // Handle new connection
+	newConnection := make(chan net.Conn) // Handle new connection
 	addedUser := make(chan net.Conn)   // Add new connection
-	deadUser := make(chan net.Conn)    // Users that have left
+	deadUser := make(chan net.Conn)    // Users that have left chat
 	messages := make(chan string)      // channel that recieves messages from all users
 
 	server, err := net.Listen("tcp", ":6000")
@@ -26,7 +41,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	go func() { // Launch routine that will accept connections forever
+	go func() { // Launch routine that will accept connections
 		for userCount < maxUsers {
 			conn, err := server.Accept()
 			if err != nil {
@@ -37,7 +52,7 @@ func main() {
 		}
 	}()
 
-	for {
+	for { // Run forever
 
 		select {
 		case conn := <-newConnection:
@@ -51,7 +66,7 @@ func main() {
 				messages <- fmt.Sprintf("Accepted user : [%s]\n\n", userName)
 
 				users[conn] = userName // Add connection
-				userCount++       
+				userCount++
 
 				addedUser <- conn // Add user to pool
 			}(conn)
@@ -60,7 +75,7 @@ func main() {
 
 			go func(conn net.Conn, userName string) {
 				reader := bufio.NewReader(conn)
-				for {
+				for { // Run forever and handle this user's messages
 					newMessage, err := reader.ReadString('\n')
 					newMessage = strings.Trim(newMessage, "\r\n")
 					if err != nil {
