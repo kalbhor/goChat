@@ -27,7 +27,7 @@ import (
 func main() {
 
 	userCount := 1
-	const maxUsers := 4 // By default
+	const maxUsers = 4 // By default
 
 	users := make(map[net.Conn]string) // Map of active connections
 	newConnection := make(chan net.Conn) // Handle new connection
@@ -91,7 +91,7 @@ func main() {
 
 		case message := <-messages: // If message recieved from any user
 
-			for conn, sentBy := range users { // Send to all users
+			for conn, _ := range users { // Send to all users
 				go func(conn net.Conn, message string) { // Write to all user connections
 						_, err := conn.Write([]byte(message))
 						if err != nil {
