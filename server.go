@@ -26,8 +26,7 @@ import (
 
 func main() {
 
-	userCount := 1
-	const maxUsers = 4 // By default
+	const maxUsers = 2 // By default
 
 	users := make(map[net.Conn]string) // Map of active connections
 	newConnection := make(chan net.Conn) // Handle new connection
@@ -42,13 +41,17 @@ func main() {
 	}
 
 	go func() { // Launch routine that will accept connections
-		for userCount < maxUsers {
+		for {
 			conn, err := server.Accept()
 			if err != nil {
 				fmt.Println(err)
 				os.Exit(1)
 			}
+			if len(users) < maxUsers {
 				newConnection <- conn // Send to handle new user
+			}else{
+				conn.Write([]byte("Server is full!"))
+			}
 		}
 	}()
 
@@ -66,7 +69,6 @@ func main() {
 				messages <- fmt.Sprintf("Accepted user : [%s]\n\n", userName)
 
 				users[conn] = userName // Add connection
-				userCount++
 
 				addedUser <- conn // Add user to pool
 			}(conn)
@@ -86,7 +88,7 @@ func main() {
 				}
 
 				deadUser <- conn // If error occurs, connection has been terminated
-				messages <- fmt.Sprintf("%s disconnected\n", userName)
+				messages <- fmt.Sprintf("%s disconnected\n\n", userName)
 			}(conn, users[conn])
 
 		case message := <-messages: // If message recieved from any user
@@ -105,7 +107,6 @@ func main() {
 		case conn := <-deadUser: // Handle dead users
 			log.Printf("Client disconnected")
 			delete(users, conn)
-			userCount--
 		}
 	}
 }
