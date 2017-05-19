@@ -10,15 +10,12 @@ import (
 
 func main(){
 
-	userCount := 0 
+	userCount := 0
 
 	users := make(map[net.Conn] int) // Map of active connections
-
 	newUser := make(chan net.Conn) // New connection
 	deadUser := make(chan net.Conn) // Users that have left
-
 	messages := make(chan string) // channel that recieves messages from all users
-	announcements := make(chan string) // channel that recieves user announcements
 
 	server, err := net.Listen("tcp", ":6000")
 	if err != nil {
@@ -35,7 +32,7 @@ func main(){
 			}
 
 			newUser <- conn
-			announcements <- fmt.Sprintf("Accepted new user, #%d\n", userCount)
+			messages <- fmt.Sprintf("Accepted new user, #%d\n", userCount)
 		}
 	}()
 
@@ -46,7 +43,6 @@ func main(){
 		case conn := <-newUser: // If new connection
 			log.Printf("Accepted new user, #%d", userCount)
 			fmt.Print('\a')
-			// announcements <- fmt.Sprintf("Accepted new user, #%d", userCount)
 
 			users[conn] = userCount // Add connection
 			userCount++ // Increment the usercount
@@ -62,7 +58,8 @@ func main(){
 
 				}
 
-				deadUser <- conn // If error occurs, connection has been terminated 
+				deadUser <- conn // If error occurs, connection has been terminated
+				messages <- fmt.Sprintf("Client disconnected\n")
 			}(conn, users[conn])
 
 		case message := <- messages: // If message recieved from any user
@@ -80,21 +77,9 @@ func main(){
 			}
 
 		case conn := <- deadUser: // Handle dead users
-			announcements <- fmt.Sprintf("Client %d disconnected\n", users[conn]) // Announce that user has left
-			log.Printf("Client %d disconnected", users[conn])
+			// messages <- fmt.Sprintf("Client disconnected\n") // Announce that user has left
+			log.Printf("Client disconnected")
 			delete(users, conn)
-
-		case message := <- announcements: // Send announcement to all users
-
-			for conn, _ := range users {
-				go func(conn net.Conn, message string){
-					_, err := conn.Write([]byte(message))
-
-					if err != nil{
-						deadUser <- conn
-					}
-				}(conn, message)
-			}
 		}
 	}
 }
