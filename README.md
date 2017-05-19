@@ -3,8 +3,8 @@
 
 ## Usage: 
 
-### 1. Start Server
-##### To start, use : `go run ./server.go`
+### 1. Run Server
+#### To run server : `go run ./server.go`
 ###### *By default it runs at port 6000*
 
 ___
