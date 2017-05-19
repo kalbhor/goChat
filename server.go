@@ -34,9 +34,11 @@ func main(){
 				os.Exit(1)
 			}
 			if userCount > maxUsers {
-				os.Exit(1)
-			}
-			newUser <- conn // Send to handle new user
+				conn.Write([]byte("Server is full!\n\n"))
+				// os.Exit(1)
+			}else {
+			newUser <- conn
+			}// Send to handle new user
 		}
 	}()
 
@@ -78,12 +80,13 @@ func main(){
 
 		case message := <- messages: // If message recieved from any user
 
-			for conn, _ := range users { // Send to all users
+			for conn, sentBy := range users { // Send to all users
 				go func(conn net.Conn, message string){ // Write to all user connections
-					_, err := conn.Write([]byte(message))
-
-					if err != nil{
-						deadUser <- conn
+					if sentBy != message[1:strings.IndexByte(message, ':')]{
+						_, err := conn.Write([]byte(message))
+						if err != nil{
+							deadUser <- conn
+						}
 					}
 				}(conn, message)
 			log.Printf("New message: %s", message)
