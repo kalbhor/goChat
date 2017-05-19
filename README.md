@@ -7,11 +7,15 @@
 ##### To start, use : `go run ./server.go`
 ###### *By default it runs at port 6000*
 
+___
+
 ### 2. Connect to server via telnet
 #### a) Same device : `telnet localhost 6000`
 #### b) Different device on same network : `telnet [local IP] 6000`
 #### c) Externally : `telnet [public IP] 6000`
 ###### *(For external connections you need to have port forwarding on)*
+
+___
 
 ### 3. Chat
 
@@ -58,6 +62,8 @@ Hey, kalbhor. What's up?
 That's great! I'll go now. Busy teaching machines.
 >Andrew Ng: That's great! I'll go now. Busy teaching machines.
 ```
+
+___
 
 ## License
 
