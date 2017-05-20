@@ -22,6 +22,7 @@ import (
 	"net"
 	"os"
 	"strings"
+	"io"
 )
 
 func main() {
@@ -50,7 +51,7 @@ func main() {
 			if len(users) < maxUsers {
 				newConnection <- conn // Send to handle new user
 			}else{
-				conn.Write([]byte("Server is full!"))
+				io.WriteString(conn, "Server is full!")
 			}
 		}
 	}()
@@ -62,7 +63,7 @@ func main() {
 
 			go func(conn net.Conn) { // Ask user for name and information
 				reader := bufio.NewReader(conn)
-				conn.Write([]byte("Enter name: "))
+				io.WriteString(conn, "Enter name: ")
 				userName, _ := reader.ReadString('\n')
 				userName = strings.Trim(userName, "\r\n")
 				log.Printf("Accepted new user : %s", userName)
@@ -95,7 +96,7 @@ func main() {
 
 			for conn, _ := range users { // Send to all users
 				go func(conn net.Conn, message string) { // Write to all user connections
-						_, err := conn.Write([]byte(message))
+						_, err := io.WriteString(conn, message)
 						if err != nil {
 							deadUser <- conn
 						}
